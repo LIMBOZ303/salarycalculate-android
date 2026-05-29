@@ -1,0 +1,36 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# Android build/cache
+android/.gradle/
+android/app/build/
+android/build/
+android/captures/
+android/local.properties
+
+# Android signing / secret files
+android/key.properties
+*.jks
+*.keystore
+
+# iOS generated/cache
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
