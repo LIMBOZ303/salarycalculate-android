@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/format_date.dart';
+import '../../core/utils/responsive.dart';
 import '../../providers/attendance_provider.dart';
 import '../../widgets/attendance_history_item.dart';
 import '../../widgets/empty_state.dart';
@@ -63,6 +64,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AttendanceProvider>();
+    final hPad = ResponsiveHelper.horizontalPadding(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,41 +74,84 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         actions: [
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: _pickMonthYear),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _pickMonthYear,
+            tooltip: 'Chọn tháng',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: provider.isLoadingHistory ? null : _load,
+          ),
         ],
       ),
-      body: provider.isLoadingHistory
-          ? const LoadingWidget()
-          : provider.historyError != null
-              ? ErrorView(message: provider.historyError!, onRetry: _load)
-              : provider.history.isEmpty
-                  ? EmptyState(
-                      title: 'Chưa có lịch sử chấm công.',
-                      subtitle: monthYearLabel(_month, _year),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: provider.history.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: Text(
-                                monthYearLabel(_month, _year),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+      body: SafeArea(
+        child: provider.isLoadingHistory && provider.history.isEmpty
+            ? const LoadingWidget(message: 'Đang tải lịch sử...')
+            : provider.historyError != null && provider.history.isEmpty
+                ? ErrorView(message: provider.historyError!, onRetry: _load)
+                : provider.history.isEmpty
+                    ? EmptyState(
+                        title: 'Chưa có lịch sử chấm công.',
+                        subtitle: monthYearLabel(_month, _year),
+                        icon: Icons.history,
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _load,
+                        color: AppColors.primary,
+                        child: ListView.builder(
+                          padding: EdgeInsets.fromLTRB(
+                            hPad,
+                            ResponsiveHelper.verticalSpacing(context, 12),
+                            hPad,
+                            ResponsiveHelper.verticalSpacing(context, 24),
+                          ),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: provider.history.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index == 0) {
+                              return ResponsiveHelper.constrainContent(
+                                context,
+                                Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: ResponsiveHelper.verticalSpacing(context, 14),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        monthYearLabel(_month, _year),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.responsiveFont(context, 18),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Theo dõi thời gian ra vào và trạng thái điểm danh',
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: ResponsiveHelper.responsiveFont(context, 13),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
+                              );
+                            }
+                            final item = provider.history[index - 1];
+                            return ResponsiveHelper.constrainContent(
+                              context,
+                              AttendanceHistoryItemWidget(item: item),
                             );
-                          }
-                          final item = provider.history[index - 1];
-                          return AttendanceHistoryItemWidget(item: item);
-                        },
+                          },
+                        ),
                       ),
-                    ),
+      ),
     );
   }
 }

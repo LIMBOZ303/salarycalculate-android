@@ -45,8 +45,17 @@ class EmployeeAttendanceApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Chấm Công',
+        title: 'Salary Calculate',
         debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3);
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(

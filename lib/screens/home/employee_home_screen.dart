@@ -3,16 +3,18 @@ import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/format_date.dart';
+import '../../core/utils/responsive.dart';
 import '../../models/attendance_model.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/employee_provider.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/attendance_status_card.dart';
-import '../../widgets/employee_avatar.dart';
+import '../../widgets/app_card.dart';
+import '../../widgets/app_gradient_header.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
-import '../../widgets/working_hour_card.dart';
+import '../../widgets/stat_card.dart';
+import '../../widgets/status_badge.dart';
 import '../attendance/my_working_hours_screen.dart';
 
 class EmployeeHomeScreen extends StatefulWidget {
@@ -52,6 +54,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final employee = employeeProvider.employee;
     final today = attendanceProvider.today ?? const TodayAttendanceModel();
     final summary = attendanceProvider.summary;
+    final hPad = ResponsiveHelper.horizontalPadding(context);
 
     final isInitialLoading = (employeeProvider.isLoading && employee == null) ||
         (attendanceProvider.isLoadingToday && attendanceProvider.today == null);
@@ -59,151 +62,242 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     if (isInitialLoading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: LoadingWidget(message: 'Đang tải dữ liệu...'),
+        body: SafeArea(child: LoadingWidget(message: 'Đang tải dữ liệu...')),
       );
     }
 
     if (employeeProvider.error != null && employee == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: ErrorView(message: employeeProvider.error!, onRetry: _load),
+        body: SafeArea(child: ErrorView(message: employeeProvider.error!, onRetry: _load)),
       );
     }
 
     if (employee == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: EmptyState(
-          title: 'Chưa có thông tin nhân viên',
-          subtitle: employeeProvider.error,
-          icon: Icons.person_off_outlined,
+        body: SafeArea(
+          child: EmptyState(
+            title: 'Chưa có thông tin nhân viên',
+            subtitle: employeeProvider.error,
+            icon: Icons.person_off_outlined,
+          ),
         ),
       );
     }
 
+    final branchLine = safeBranchName(employee.branchName);
+    final positionLine = safePosition(employee.position);
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            Row(
-              children: [
-                EmployeeAvatar(
-                  avatarUrl: employee.avatar,
-                  name: employee.fullName,
-                  size: 64,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Xin chào,',
-                        style: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.9),
-                        ),
-                      ),
-                      Text(
-                        employee.fullName,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        employee.position,
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        employee.branchName,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _load,
+          color: AppColors.primary,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: ResponsiveHelper.constrainContent(
+                  context,
+                  AppGradientHeader(
+                    subtitle: 'Xin chào,',
+                    title: safeDisplayText(employee.fullName, fallback: 'Nhân viên'),
+                    secondaryLine: '$positionLine · $branchLine',
+                    avatarUrl: employee.avatar,
+                    avatarName: employee.fullName,
+                    variant: AppHeaderVariant.home,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Hôm nay',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            if (attendanceProvider.todayError != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  attendanceProvider.todayError!,
-                  style: const TextStyle(color: AppColors.danger, fontSize: 13),
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  hPad,
+                  0,
+                  hPad,
+                  ResponsiveHelper.bottomNavPadding,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: ResponsiveHelper.constrainContent(
+                    context,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Transform.translate(
+                          offset: Offset(0, -ResponsiveHelper.verticalSpacing(context, 12)),
+                          child: AppCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Trạng thái hôm nay',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.responsiveFont(context, 16),
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    Flexible(
+                                      child: StatusBadge.fromStatus(today.status),
+                                    ),
+                                  ],
+                                ),
+                                if (attendanceProvider.isLoadingToday)
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: ResponsiveHelper.verticalSpacing(context, 16),
+                                    ),
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  )
+                                else ...[
+                                  SizedBox(height: ResponsiveHelper.verticalSpacing(context, 14)),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _timeBox(
+                                          context,
+                                          Icons.login,
+                                          'Giờ vào',
+                                          formatTime(today.checkInTime),
+                                        ),
+                                      ),
+                                      SizedBox(width: ResponsiveHelper.verticalSpacing(context, 10)),
+                                      Expanded(
+                                        child: _timeBox(
+                                          context,
+                                          Icons.logout,
+                                          'Giờ ra',
+                                          formatTime(today.checkOutTime),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: ResponsiveHelper.verticalSpacing(context, 10)),
+                                  _timeBox(
+                                    context,
+                                    Icons.schedule,
+                                    'Tổng giờ hôm nay',
+                                    formatHours(today.totalHours),
+                                    fullWidth: true,
+                                  ),
+                                  SizedBox(height: ResponsiveHelper.verticalSpacing(context, 18)),
+                                  AppButton(
+                                    label: 'Chấm công ngay',
+                                    icon: Icons.fingerprint,
+                                    onPressed: () => widget.onNavigateToCheckIn?.call(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveHelper.verticalSpacing(context, 8)),
+                        const AppSectionTitle('Thống kê tháng này'),
+                        if (attendanceProvider.summaryError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              attendanceProvider.summaryError!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                            ),
+                          ),
+                        StatGrid(
+                          children: [
+                            StatCard(
+                              label: 'Tổng giờ làm',
+                              value: formatHours(summary?.totalHours),
+                              icon: Icons.schedule,
+                            ),
+                            StatCard(
+                              label: 'Ngày làm',
+                              value: '${summary?.totalDays ?? 0}',
+                              icon: Icons.calendar_today,
+                              accentColor: AppColors.success,
+                            ),
+                            StatCard(
+                              label: 'Đi trễ',
+                              value: '${summary?.lateCount ?? 0} lần',
+                              icon: Icons.warning_amber,
+                              accentColor: AppColors.warning,
+                            ),
+                            StatCard(
+                              label: 'Phút đi trễ',
+                              value: '${summary?.totalLateMinutes ?? 0}',
+                              icon: Icons.timer,
+                              accentColor: AppColors.danger,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: ResponsiveHelper.verticalSpacing(context, 14)),
+                        AppButton(
+                          label: 'Xem giờ làm chi tiết',
+                          isOutlined: true,
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const MyWorkingHoursScreen()),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            if (attendanceProvider.isLoadingToday)
-              const LoadingWidget()
-            else
-              AttendanceStatusCard(attendance: today),
-            const SizedBox(height: 20),
-            const Text(
-              'Tháng này',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            if (attendanceProvider.summaryError != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  attendanceProvider.summaryError!,
-                  style: const TextStyle(color: AppColors.danger, fontSize: 13),
-                ),
-              ),
-            Row(
-              children: [
-                WorkingHourCard(
-                  label: 'Tổng giờ',
-                  value: formatHours(summary?.totalHours),
-                  icon: Icons.schedule,
-                ),
-                const SizedBox(width: 10),
-                WorkingHourCard(
-                  label: 'Ngày làm',
-                  value: '${summary?.totalDays ?? 0}',
-                  icon: Icons.calendar_today,
-                  accentColor: AppColors.success,
-                ),
-                const SizedBox(width: 10),
-                WorkingHourCard(
-                  label: 'Đi trễ',
-                  value: '${summary?.lateCount ?? 0}',
-                  icon: Icons.warning_amber,
-                  accentColor: AppColors.warning,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            AppButton(
-              label: 'Chấm công ngay',
-              onPressed: () => widget.onNavigateToCheckIn?.call(),
-            ),
-            const SizedBox(height: 12),
-            AppButton(
-              label: 'Xem giờ làm',
-              isOutlined: true,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MyWorkingHoursScreen()),
-                );
-              },
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _timeBox(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value, {
+    bool fullWidth = false,
+  }) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: EdgeInsets.all(ResponsiveHelper.isSmallPhone(context) ? 10 : 14),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: ResponsiveHelper.responsiveIconSize(context, 20), color: AppColors.primary),
+          SizedBox(height: ResponsiveHelper.verticalSpacing(context, 6)),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: ResponsiveHelper.responsiveFont(context, 12),
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: ResponsiveHelper.responsiveFont(context, 16),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

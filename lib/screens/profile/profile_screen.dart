@@ -3,15 +3,17 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/format_date.dart';
+import '../../core/utils/responsive.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/employee_provider.dart';
 import '../../widgets/app_button.dart';
-import '../../widgets/employee_avatar.dart';
+import '../../widgets/app_gradient_header.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
+import '../../widgets/profile_info_item.dart';
+import '../../widgets/profile_summary_card.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -57,42 +59,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'inactive':
         return 'Ngưng hoạt động';
       default:
-        return status ?? '--';
+        return safeDisplayText(status);
     }
   }
 
   String _formatMoney(double rate) {
     if (rate <= 0) return '--';
     final formatter = NumberFormat('#,###', 'vi_VN');
-    return '${formatter.format(rate)} đ/giờ';
+    return '${formatter.format(rate)} VND/giờ';
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EmployeeProvider>();
     final employee = provider.employee;
+    final hPad = ResponsiveHelper.horizontalPadding(context);
+    final overlap = ResponsiveHelper.profileCardOverlap(context);
 
     if (provider.isLoading && employee == null) {
       return const Scaffold(
         backgroundColor: AppColors.background,
-        body: LoadingWidget(message: 'Đang tải hồ sơ...'),
+        body: SafeArea(child: LoadingWidget(message: 'Đang tải hồ sơ...')),
       );
     }
 
     if (provider.error != null && employee == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: ErrorView(message: provider.error!, onRetry: _reload),
+        body: SafeArea(child: ErrorView(message: provider.error!, onRetry: _reload)),
       );
     }
 
     if (employee == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: EmptyState(
-          title: 'Chưa có thông tin cá nhân',
-          subtitle: provider.error,
-          icon: Icons.person_off_outlined,
+        body: SafeArea(
+          child: EmptyState(
+            title: 'Chưa có thông tin cá nhân',
+            subtitle: provider.error,
+            icon: Icons.person_off_outlined,
+          ),
         ),
       );
     }
@@ -102,76 +108,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _reload,
-          child: ListView(
-            padding: const EdgeInsets.all(20),
+          color: AppColors.primary,
+          child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              Center(
-                child: EmployeeAvatar(
-                  avatarUrl: employee.avatar,
-                  name: employee.fullName,
-                  size: 96,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Text(
-                  employee.fullName,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+            slivers: [
+              SliverToBoxAdapter(
+                child: ResponsiveHelper.constrainContent(
+                  context,
+                  Column(
+                    children: [
+                      const AppGradientHeader(
+                        title: '',
+                        variant: AppHeaderVariant.profileBanner,
+                      ),
+                      Transform.translate(
+                        offset: Offset(0, -overlap),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: hPad),
+                          child: ProfileSummaryCard(
+                            fullName: employee.fullName,
+                            position: employee.position,
+                            status: employee.status,
+                            statusLabel: _statusLabel(employee.status),
+                            avatarUrl: employee.avatar,
+                            hireDate: employee.hireDate,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              _tile('Mã nhân viên', employee.employeeCode),
-              _tile('Số điện thoại', employee.phone),
-              _tile('Email', employee.email),
-              _tile('Chi nhánh', employee.branchName),
-              _tile('Địa chỉ chi nhánh', employee.branchAddress),
-              _tile('Chức vụ', employee.position),
-              _tile('Lương/giờ', _formatMoney(employee.hourlyRate)),
-              _tile('Ngày bắt đầu', formatDate(employee.hireDate)),
-              _tile('Trạng thái', _statusLabel(employee.status)),
-              const SizedBox(height: 32),
-              AppButton(
-                label: 'Đăng xuất',
-                color: AppColors.danger,
-                onPressed: _logout,
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  hPad,
+                  ResponsiveHelper.verticalSpacing(context, 8) - overlap,
+                  hPad,
+                  ResponsiveHelper.bottomNavPadding,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: ResponsiveHelper.constrainContent(
+                    context,
+                    Column(
+                      children: [
+                        ProfileInfoCard(
+                          title: 'Thông tin công việc',
+                          icon: Icons.work_outline,
+                          children: [
+                            ProfileInfoItem(
+                              icon: Icons.badge_outlined,
+                              label: 'Mã nhân viên',
+                              value: safeDisplayText(employee.employeeCode),
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.business_center_outlined,
+                              label: 'Chức vụ',
+                              value: safePosition(employee.position),
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.store_outlined,
+                              label: 'Chi nhánh',
+                              value: safeBranchName(employee.branchName),
+                              maxLines: 2,
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.payments_outlined,
+                              label: 'Lương/giờ',
+                              value: _formatMoney(employee.hourlyRate),
+                            ),
+                          ],
+                        ),
+                        ProfileInfoCard(
+                          title: 'Thông tin cá nhân',
+                          icon: Icons.person_outline,
+                          children: [
+                            ProfileInfoItem(
+                              icon: Icons.phone_outlined,
+                              label: 'Số điện thoại',
+                              value: safeDisplayText(employee.phone),
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.email_outlined,
+                              label: 'Email',
+                              value: safeDisplayText(employee.email),
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.location_on_outlined,
+                              label: 'Địa chỉ chi nhánh',
+                              value: safeAddress(employee.branchAddress),
+                              maxLines: 2,
+                            ),
+                            ProfileInfoItem(
+                              icon: Icons.info_outline,
+                              label: 'Trạng thái',
+                              value: _statusLabel(employee.status),
+                            ),
+                          ],
+                        ),
+                        AppButton(
+                          label: 'Đăng xuất',
+                          variant: AppButtonVariant.danger,
+                          icon: Icons.logout,
+                          onPressed: _logout,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _tile(String label, String value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 130,
-            child: Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? '--' : value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

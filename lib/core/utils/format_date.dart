@@ -42,3 +42,17 @@ String formatMinutes(int? minutes) {
 }
 
 String monthYearLabel(int month, int year) => 'Tháng $month/$year';
+
+String formatDateLong(DateTime? date) {
+  if (date == null) return '--';
+  try {
+    return DateFormat('EEEE, dd MMMM yyyy', 'vi_VN').format(date.toLocal());
+  } catch (_) {
+    return formatDate(date);
+  }
+}
+
+String formatTimeAmPm(DateTime? date) {
+  if (date == null) return '--';
+  return DateFormat('h:mm a', 'vi_VN').format(date.toLocal());
+}
