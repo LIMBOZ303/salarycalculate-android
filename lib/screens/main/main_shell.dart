@@ -5,6 +5,7 @@ import '../../core/utils/responsive.dart';
 import '../attendance/check_in_out_screen.dart';
 import '../attendance/my_working_hours_screen.dart';
 import '../home/employee_home_screen.dart';
+import '../payroll/my_payroll_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -18,26 +19,30 @@ class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
 
   void goToTab(int index) {
-    if (index >= 0 && index < 4) {
+    if (index >= 0 && index < 5) {
       setState(() => _currentIndex = index);
     }
   }
 
   late final List<Widget> _pages = [
-    EmployeeHomeScreen(onNavigateToCheckIn: () => goToTab(1)),
+    EmployeeHomeScreen(
+      onNavigateToCheckIn: () => goToTab(1),
+      onNavigateToPayroll: () => goToTab(3),
+    ),
     const CheckInOutScreen(),
     const MyWorkingHoursScreen(),
+    const MyPayrollScreen(),
     const ProfileScreen(),
   ];
 
   double _navHeight(BuildContext context) {
-    if (ResponsiveHelper.isSmallPhone(context)) return 62;
+    if (ResponsiveHelper.isSmallPhone(context)) return 60;
     return 68;
   }
 
   double _labelSize(BuildContext context) {
-    if (ResponsiveHelper.isSmallPhone(context)) return 11;
-    return 12;
+    if (ResponsiveHelper.isSmallPhone(context)) return 10;
+    return 11;
   }
 
   @override
@@ -80,7 +85,7 @@ class MainShellState extends State<MainShell> {
               iconTheme: WidgetStateProperty.resolveWith((states) {
                 final selected = states.contains(WidgetState.selected);
                 return IconThemeData(
-                  size: ResponsiveHelper.responsiveIconSize(context, selected ? 24 : 22),
+                  size: ResponsiveHelper.responsiveIconSize(context, selected ? 22 : 20),
                   color: selected ? AppColors.primary : AppColors.textSecondary,
                 );
               }),
@@ -107,6 +112,11 @@ class MainShellState extends State<MainShell> {
                   icon: Icon(Icons.schedule_outlined),
                   selectedIcon: Icon(Icons.schedule),
                   label: 'Giờ làm',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.payments_outlined),
+                  selectedIcon: Icon(Icons.payments),
+                  label: 'Lương',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.person_outline),
