@@ -5,8 +5,11 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/format_date.dart';
 import '../../core/utils/responsive.dart';
 import '../../models/attendance_model.dart';
+import '../../core/utils/format_money.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/employee_provider.dart';
+import '../../providers/payroll_provider.dart';
+import '../../widgets/payroll_status_badge.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/app_gradient_header.dart';
@@ -18,9 +21,14 @@ import '../../widgets/status_badge.dart';
 import '../attendance/my_working_hours_screen.dart';
 
 class EmployeeHomeScreen extends StatefulWidget {
-  const EmployeeHomeScreen({super.key, this.onNavigateToCheckIn});
+  const EmployeeHomeScreen({
+    super.key,
+    this.onNavigateToCheckIn,
+    this.onNavigateToPayroll,
+  });
 
   final VoidCallback? onNavigateToCheckIn;
+  final VoidCallback? onNavigateToPayroll;
 
   @override
   State<EmployeeHomeScreen> createState() => _EmployeeHomeScreenState();
@@ -37,6 +45,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     final now = DateTime.now();
     final employeeProvider = context.read<EmployeeProvider>();
     final attendanceProvider = context.read<AttendanceProvider>();
+    final payrollProvider = context.read<PayrollProvider>();
 
     await employeeProvider.loadMyProfile(force: true);
     if (!mounted) return;
@@ -44,6 +53,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
     await Future.wait([
       attendanceProvider.loadTodayAttendance(),
       attendanceProvider.loadSummary(month: now.month, year: now.year),
+      payrollProvider.loadMyPayroll(now.month, now.year),
     ]);
   }
 
@@ -51,6 +61,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
   Widget build(BuildContext context) {
     final employeeProvider = context.watch<EmployeeProvider>();
     final attendanceProvider = context.watch<AttendanceProvider>();
+    final payrollProvider = context.watch<PayrollProvider>();
     final employee = employeeProvider.employee;
     final today = attendanceProvider.today ?? const TodayAttendanceModel();
     final summary = attendanceProvider.summary;
@@ -198,6 +209,86 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                           ),
                         ),
                         SizedBox(height: ResponsiveHelper.verticalSpacing(context, 8)),
+                        AppCard(
+                          onTap: widget.onNavigateToPayroll,
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.lightBlue,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  color: AppColors.primary,
+                                  size: ResponsiveHelper.responsiveIconSize(context, 24),
+                                ),
+                              ),
+                              SizedBox(width: ResponsiveHelper.verticalSpacing(context, 12)),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Lương tháng này',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper.responsiveFont(context, 15),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (payrollProvider.isLoading)
+                                      Text(
+                                        'Đang tải...',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.responsiveFont(context, 13),
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      )
+                                    else if (payrollProvider.payroll != null)
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              formatCurrency(payrollProvider.payroll!.payableAmount),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: ResponsiveHelper.responsiveFont(context, 16),
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          PayrollStatusBadge(status: payrollProvider.payroll!.status),
+                                        ],
+                                      )
+                                    else
+                                      Text(
+                                        'Chưa có bảng lương',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.responsiveFont(context, 13),
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                color: AppColors.textSecondary,
+                                size: ResponsiveHelper.responsiveIconSize(context, 22),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveHelper.verticalSpacing(context, 14)),
                         const AppSectionTitle('Thống kê tháng này'),
                         if (attendanceProvider.summaryError != null)
                           Padding(

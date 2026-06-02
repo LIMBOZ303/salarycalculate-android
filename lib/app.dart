@@ -8,12 +8,14 @@ import 'core/storage/secure_storage_service.dart';
 import 'providers/attendance_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/employee_provider.dart';
+import 'providers/payroll_provider.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/attendance_service.dart';
 import 'services/auth_service.dart';
 import 'services/device_service.dart';
 import 'services/employee_service.dart';
 import 'services/location_service.dart';
+import 'services/payroll_service.dart';
 
 class EmployeeAttendanceApp extends StatelessWidget {
   const EmployeeAttendanceApp({super.key});
@@ -31,6 +33,7 @@ class EmployeeAttendanceApp extends StatelessWidget {
       locationService,
       deviceService,
     );
+    final payrollService = PayrollService(dioClient);
 
     return MultiProvider(
       providers: [
@@ -42,6 +45,9 @@ class EmployeeAttendanceApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => AttendanceProvider(attendanceService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PayrollProvider(payrollService),
         ),
       ],
       child: MaterialApp(

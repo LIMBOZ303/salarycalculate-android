@@ -10,4 +10,5 @@ class ApiEndpoints {
   static const String attendanceToday = '/api/attendance/me/today';
   static const String attendanceSummary = '/api/attendance/me/summary';
   static const String attendanceHistory = '/api/attendance/me/history';
+  static const String payrollMe = '/api/payrolls/me';
 }

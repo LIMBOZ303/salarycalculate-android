@@ -7,6 +7,7 @@ import '../../core/utils/responsive.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/employee_provider.dart';
+import '../../providers/payroll_provider.dart';
 import '../../widgets/app_button.dart';
 import '../../widgets/app_gradient_header.dart';
 import '../../widgets/empty_state.dart';
@@ -41,6 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     context.read<EmployeeProvider>().clear();
     context.read<AttendanceProvider>().clear();
+    context.read<PayrollProvider>().clear();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
