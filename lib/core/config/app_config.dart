@@ -9,7 +9,7 @@ class AppConfig {
   static const bool useEmulator = false;
 
   static const String emulatorBaseUrl = 'http://10.0.2.2:5000';
-  static const String deviceBaseUrl = 'http://192.168.53.47:5000';
+  static const String deviceBaseUrl = 'https://salarycalculate-be.onrender.com';
 
   static String get baseUrl => useEmulator ? emulatorBaseUrl : deviceBaseUrl;
 }
