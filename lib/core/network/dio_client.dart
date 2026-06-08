@@ -67,6 +67,30 @@ class DioClient {
     }
   }
 
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    Object? data,
+  }) async {
+    try {
+      final response = await _dio.patch<dynamic>(path, data: data);
+      return _parseResponse(response.data);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> delete(
+    String path, {
+    Object? data,
+  }) async {
+    try {
+      final response = await _dio.delete<dynamic>(path, data: data);
+      return _parseResponse(response.data);
+    } on DioException catch (e) {
+      throw _mapDioError(e);
+    }
+  }
+
   Map<String, dynamic> _parseResponse(dynamic data) {
     if (data is! Map<String, dynamic>) {
       throw ApiException(message: 'Phản hồi không hợp lệ từ máy chủ');

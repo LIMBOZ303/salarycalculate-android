@@ -116,7 +116,7 @@ class _EmployeeHomeScreenState extends State<EmployeeHomeScreen> {
                     subtitle: 'Xin chào,',
                     title: safeDisplayText(employee.fullName, fallback: 'Nhân viên'),
                     secondaryLine: '$positionLine · $branchLine',
-                    avatarUrl: employee.avatar,
+                    avatarUrl: employee.avatarUrl,
                     avatarName: employee.fullName,
                     variant: AppHeaderVariant.home,
                   ),

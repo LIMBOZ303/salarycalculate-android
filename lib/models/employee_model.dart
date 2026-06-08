@@ -28,7 +28,7 @@ class EmployeeModel {
     required this.phone,
     required this.position,
     required this.status,
-    this.avatar,
+    this.avatarUrl,
     this.branch,
     this.branchId,
     this.hourlyRate = 0,
@@ -44,13 +44,47 @@ class EmployeeModel {
   final String phone;
   final String position;
   final String status;
-  final String? avatar;
+  final String? avatarUrl;
   final BranchInfo? branch;
   final String? branchId;
   final double hourlyRate;
   final DateTime? hireDate;
   final UserModel? user;
   final String? userId;
+
+  EmployeeModel copyWith({
+    String? id,
+    String? employeeCode,
+    String? fullName,
+    String? email,
+    String? phone,
+    String? position,
+    String? status,
+    String? avatarUrl,
+    BranchInfo? branch,
+    String? branchId,
+    double? hourlyRate,
+    DateTime? hireDate,
+    UserModel? user,
+    String? userId,
+  }) {
+    return EmployeeModel(
+      id: id ?? this.id,
+      employeeCode: employeeCode ?? this.employeeCode,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      position: position ?? this.position,
+      status: status ?? this.status,
+      avatarUrl: avatarUrl != null && avatarUrl.isEmpty ? '' : (avatarUrl ?? this.avatarUrl),
+      branch: branch ?? this.branch,
+      branchId: branchId ?? this.branchId,
+      hourlyRate: hourlyRate ?? this.hourlyRate,
+      hireDate: hireDate ?? this.hireDate,
+      user: user ?? this.user,
+      userId: userId ?? this.userId,
+    );
+  }
 
   String get branchName => branch?.name ?? 'Chưa gán chi nhánh';
 
@@ -82,8 +116,12 @@ class EmployeeModel {
         json['status'] ?? (userJson is Map ? userJson['status'] : null),
         fallback: 'active',
       ),
-      avatar: _optionalStr(json['avatar']) ??
-          (userJson is Map ? _optionalStr(userJson['avatar']) : null),
+      avatarUrl: _optionalStr(json['avatarUrl']) ??
+          _optionalStr(json['avatar']) ??
+          (userJson is Map ? _optionalStr(userJson['avatarUrl']) : null) ??
+          (userJson is Map ? _optionalStr(userJson['avatar']) : null) ??
+          (json['userId'] is Map ? _optionalStr(json['userId']['avatarUrl']) : null) ??
+          (json['userId'] is Map ? _optionalStr(json['userId']['avatar']) : null),
       branch: branch,
       branchId: branch?.id ?? _optionalStr(branchFromId),
       hourlyRate: _toDouble(json['hourlyRate']) ?? 0,

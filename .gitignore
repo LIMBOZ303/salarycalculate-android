@@ -34,3 +34,10 @@ ios/Flutter/Flutter.podspec
 # OS
 .DS_Store
 Thumbs.db
+
+#codegraph
+.codegraph/
+.claude/
+.cursor/
+.gemini/
+.kiro/

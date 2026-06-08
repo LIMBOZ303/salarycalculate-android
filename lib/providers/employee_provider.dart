@@ -44,4 +44,11 @@ class EmployeeProvider extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  void updateAvatarUrl(String? url) {
+    if (employee != null) {
+      employee = employee!.copyWith(avatarUrl: url);
+      notifyListeners();
+    }
+  }
 }

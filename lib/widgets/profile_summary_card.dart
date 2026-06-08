@@ -17,6 +17,9 @@ class ProfileSummaryCard extends StatelessWidget {
     required this.statusLabel,
     this.avatarUrl,
     this.hireDate,
+    this.onAvatarEdit,
+    this.onAvatarDelete,
+    this.isUploadingAvatar = false,
   });
 
   final String fullName;
@@ -25,6 +28,9 @@ class ProfileSummaryCard extends StatelessWidget {
   final String statusLabel;
   final String? avatarUrl;
   final DateTime? hireDate;
+  final VoidCallback? onAvatarEdit;
+  final VoidCallback? onAvatarDelete;
+  final bool isUploadingAvatar;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +87,44 @@ class ProfileSummaryCard extends StatelessWidget {
                 color: AppColors.textSecondary,
                 fontSize: ResponsiveHelper.responsiveFont(context, 13),
               ),
+            ),
+          ],
+          if (onAvatarEdit != null) ...[
+            SizedBox(height: ResponsiveHelper.verticalSpacing(context, 16)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isUploadingAvatar) ...[
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Đang tải ảnh...'),
+                ] else
+                  TextButton.icon(
+                    onPressed: onAvatarEdit,
+                    icon: const Icon(Icons.camera_alt_outlined, size: 20),
+                    label: const Text('Đổi ảnh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  ),
+                if (avatarUrl != null && avatarUrl!.isNotEmpty && onAvatarDelete != null && !isUploadingAvatar) ...[
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onAvatarDelete,
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                    label: const Text('Xóa ảnh'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ],
