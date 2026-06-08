@@ -34,3 +34,12 @@ ios/Flutter/Flutter.podspec
 # OS
 .DS_Store
 Thumbs.db
+
+# AI / coding assistant local files
+.claude/
+.codegraph/
+.gemini/
+.kiro/
+
+# Cursor local workspace/cache
+.cursor/

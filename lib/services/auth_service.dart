@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
+
 import '../core/constants/api_endpoints.dart';
+import '../core/network/api_exception.dart';
 import '../core/network/dio_client.dart';
 import '../models/user_model.dart';
 
@@ -38,10 +41,33 @@ class AuthService {
 
   Future<UserModel> getMe() async {
     final response = await _client.get(ApiEndpoints.me);
-    final data = response['data'];
-    if (data is Map<String, dynamic>) {
-      return UserModel.fromJson(data);
+
+    if (kDebugMode) {
+      debugPrint('[AuthService] /auth/me raw response: $response');
     }
-    throw Exception('Không lấy được thông tin tài khoản');
+
+    final payload = extractUserPayload(response);
+    if (payload == null || !_hasIdentityFields(payload)) {
+      throw ApiException(
+        message: 'Không lấy được thông tin tài khoản',
+        responseData: response,
+      );
+    }
+
+    final user = UserModel.fromJson(payload);
+    if (kDebugMode) {
+      debugPrint(
+        '[AuthService] parsed user role: ${user.role}, status: ${user.status}',
+      );
+    }
+    return user;
+  }
+
+  bool _hasIdentityFields(Map<String, dynamic> payload) {
+    return payload.containsKey('role') ||
+        payload.containsKey('status') ||
+        payload.containsKey('_id') ||
+        payload.containsKey('id') ||
+        payload.containsKey('email');
   }
 }

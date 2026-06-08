@@ -1,3 +1,20 @@
+Map<String, dynamic>? extractUserPayload(dynamic responseData) {
+  if (responseData is! Map) return null;
+
+  final root = responseData;
+  final data = root['data'];
+  if (data is Map && data['user'] is Map) {
+    return Map<String, dynamic>.from(data['user'] as Map);
+  }
+  if (root['user'] is Map) {
+    return Map<String, dynamic>.from(root['user'] as Map);
+  }
+  if (data is Map) {
+    return Map<String, dynamic>.from(data);
+  }
+  return Map<String, dynamic>.from(root);
+}
+
 class UserModel {
   const UserModel({
     required this.id,
@@ -46,10 +63,10 @@ class AuthResponse {
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>? ?? json;
-    final userJson = data['user'] as Map<String, dynamic>?;
+    final userPayload = extractUserPayload(json);
     return AuthResponse(
       token: data['token']?.toString() ?? json['token']?.toString() ?? '',
-      user: UserModel.fromJson(userJson ?? data),
+      user: UserModel.fromJson(userPayload ?? data),
     );
   }
 }

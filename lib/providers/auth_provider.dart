@@ -68,11 +68,23 @@ class AuthProvider extends ChangeNotifier {
       errorMessage = null;
 
       if (kDebugMode) {
-        debugPrint('[AuthProvider] /auth/me success role=${me.role} status=${me.status}');
+        debugPrint(
+          '[AuthProvider] parsed user role: ${me.role}, status: ${me.status}',
+        );
+      }
+
+      if (me.role.isEmpty) {
+        status = AuthStatus.sessionError;
+        errorMessage = 'Không thể đọc thông tin tài khoản. Vui lòng thử lại.';
+        if (kDebugMode) {
+          debugPrint('[AuthProvider] /auth/me parse incomplete, token kept');
+        }
+        notifyListeners();
+        return;
       }
 
       if (!me.isEmployee) {
-        await _clearSession(reason: 'not employee');
+        await _clearSession(reason: 'not employee (role=${me.role})');
         status = AuthStatus.error;
         errorMessage = 'Ứng dụng này chỉ dành cho nhân viên';
         notifyListeners();
@@ -137,6 +149,12 @@ class AuthProvider extends ChangeNotifier {
         );
       }
 
+      if (parsedUser.role.isEmpty) {
+        status = AuthStatus.sessionError;
+        errorMessage = 'Không thể đọc thông tin tài khoản. Vui lòng thử lại.';
+        return;
+      }
+
       if (!parsedUser.isEmployee) {
         await _clearSession(reason: 'invalid role (${parsedUser.role})');
         status = AuthStatus.error;
@@ -190,26 +208,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   UserModel? _parseUserFromErrorResponse(ApiException e) {
-    final data = e.responseData;
-    if (data == null) return null;
-
-    final nestedData = data['data'];
-    if (nestedData is Map<String, dynamic>) {
-      final userJson = nestedData['user'];
-      if (userJson is Map<String, dynamic>) {
-        return UserModel.fromJson(userJson);
-      }
-      if (nestedData.containsKey('role') || nestedData.containsKey('status')) {
-        return UserModel.fromJson(nestedData);
-      }
-    }
-
-    final userJson = data['user'];
-    if (userJson is Map<String, dynamic>) {
-      return UserModel.fromJson(userJson);
-    }
-
-    return null;
+    final payload = extractUserPayload(e.responseData);
+    if (payload == null) return null;
+    return UserModel.fromJson(payload);
   }
 
   bool _isTokenInvalidMessage(String message) {
