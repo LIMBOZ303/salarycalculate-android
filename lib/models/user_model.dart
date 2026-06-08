@@ -6,7 +6,7 @@ class UserModel {
     required this.phone,
     required this.role,
     required this.status,
-    this.avatar,
+    this.avatarUrl,
   });
 
   final String id;
@@ -15,7 +15,7 @@ class UserModel {
   final String phone;
   final String role;
   final String status;
-  final String? avatar;
+  final String? avatarUrl;
 
   bool get isEmployee => role.toLowerCase() == 'employee';
   bool get isActive => status.toLowerCase() == 'active';
@@ -25,15 +25,37 @@ class UserModel {
     return blocked.contains(status.toLowerCase());
   }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  UserModel copyWith({
+    String? id,
+    String? fullName,
+    String? email,
+    String? phone,
+    String? role,
+    String? status,
+    String? avatarUrl,
+  }) {
     return UserModel(
-      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-      fullName: json['fullName']?.toString() ?? '',
-      email: json['email']?.toString() ?? '',
-      phone: json['phone']?.toString() ?? '',
-      role: json['role']?.toString() ?? '',
-      status: json['status']?.toString() ?? '',
-      avatar: json['avatar']?.toString(),
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      status: status ?? this.status,
+      avatarUrl: avatarUrl != null && avatarUrl.isEmpty ? '' : (avatarUrl ?? this.avatarUrl), // allow clearing avatar
+    );
+  }
+
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    final userJson = json['user'] as Map<String, dynamic>? ?? json;
+
+    return UserModel(
+      id: userJson['_id']?.toString() ?? userJson['id']?.toString() ?? '',
+      fullName: userJson['fullName']?.toString() ?? '',
+      email: userJson['email']?.toString() ?? '',
+      phone: userJson['phone']?.toString() ?? '',
+      role: userJson['role']?.toString() ?? '',
+      status: userJson['status']?.toString() ?? '',
+      avatarUrl: userJson['avatarUrl']?.toString() ?? userJson['avatar']?.toString(),
     );
   }
 }

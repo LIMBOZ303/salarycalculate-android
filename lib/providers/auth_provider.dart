@@ -58,7 +58,6 @@ class AuthProvider extends ChangeNotifier {
       errorMessage = null;
 
       if (!me.isEmployee) {
-        await _storage.deleteToken();
         status = AuthStatus.error;
         errorMessage = 'Ứng dụng này chỉ dành cho nhân viên';
         notifyListeners();
@@ -70,22 +69,18 @@ class AuthProvider extends ChangeNotifier {
       } else if (me.isActive) {
         status = AuthStatus.authenticated;
       } else if (me.isBlocked) {
-        await _storage.deleteToken();
         status = AuthStatus.unauthenticated;
         errorMessage = 'Tài khoản không còn hoạt động';
       } else {
-        await _storage.deleteToken();
         status = AuthStatus.unauthenticated;
         errorMessage = 'Trạng thái tài khoản không hợp lệ';
       }
     } on ApiException catch (e) {
-      await _storage.deleteToken();
-      status = AuthStatus.unauthenticated;
+      status = AuthStatus.error;
       errorMessage = e.message;
     } catch (e) {
-      await _storage.deleteToken();
-      status = AuthStatus.unauthenticated;
-      errorMessage = e.toString();
+      status = AuthStatus.error;
+      errorMessage = 'Lỗi kết nối: ${e.toString()}';
     }
     notifyListeners();
   }
@@ -173,6 +168,13 @@ class AuthProvider extends ChangeNotifier {
       errorMessage = null;
     }
     notifyListeners();
+  }
+
+  void updateAvatarUrl(String? url) {
+    if (user != null) {
+      user = user!.copyWith(avatarUrl: url);
+      notifyListeners();
+    }
   }
 
   String _mapLoginError(ApiException e) {

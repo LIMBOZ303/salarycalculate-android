@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../core/network/api_exception.dart';
+import '../../services/avatar_service.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/responsive.dart';
@@ -25,6 +30,126 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingAvatar = false;
+
+  Future<void> _pickAndUploadAvatar() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Chọn từ thư viện'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _processUpload(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Chụp ảnh'),
+              onTap: () {
+                Navigator.of(ctx).pop();
+                _processUpload(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _processUpload(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(source: source);
+      if (pickedFile == null) return;
+      if (!mounted) return;
+
+      final avatarService = context.read<AvatarService>();
+      final authProvider = context.read<AuthProvider>();
+      final employeeProvider = context.read<EmployeeProvider>();
+
+      setState(() => _isUploadingAvatar = true);
+
+      final url = await avatarService.uploadMyAvatar(File(pickedFile.path));
+      if (!mounted) return;
+
+      authProvider.updateAvatarUrl(url);
+      employeeProvider.updateAvatarUrl(url);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cập nhật ảnh đại diện thành công')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
+  Future<void> _deleteAvatar() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xác nhận'),
+        content: const Text('Bạn có chắc muốn xóa ảnh đại diện?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    final avatarService = context.read<AvatarService>();
+    final authProvider = context.read<AuthProvider>();
+    final employeeProvider = context.read<EmployeeProvider>();
+
+    try {
+      setState(() => _isUploadingAvatar = true);
+      await avatarService.deleteMyAvatar();
+      if (!mounted) return;
+
+      authProvider.updateAvatarUrl('');
+      employeeProvider.updateAvatarUrl('');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đã xóa ảnh đại diện')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingAvatar = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -132,8 +257,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             position: employee.position,
                             status: employee.status,
                             statusLabel: _statusLabel(employee.status),
-                            avatarUrl: employee.avatar,
+                            avatarUrl: employee.avatarUrl,
                             hireDate: employee.hireDate,
+                            onAvatarEdit: _pickAndUploadAvatar,
+                            onAvatarDelete: _deleteAvatar,
+                            isUploadingAvatar: _isUploadingAvatar,
                           ),
                         ),
                       ),

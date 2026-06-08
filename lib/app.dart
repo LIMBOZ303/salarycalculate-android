@@ -16,6 +16,7 @@ import 'services/device_service.dart';
 import 'services/employee_service.dart';
 import 'services/location_service.dart';
 import 'services/payroll_service.dart';
+import 'services/avatar_service.dart';
 
 class EmployeeAttendanceApp extends StatelessWidget {
   const EmployeeAttendanceApp({super.key});
@@ -34,6 +35,7 @@ class EmployeeAttendanceApp extends StatelessWidget {
       deviceService,
     );
     final payrollService = PayrollService(dioClient);
+    final avatarService = AvatarService(dioClient);
 
     return MultiProvider(
       providers: [
@@ -49,6 +51,7 @@ class EmployeeAttendanceApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => PayrollProvider(payrollService),
         ),
+        Provider(create: (_) => avatarService),
       ],
       child: MaterialApp(
         title: 'Salary Calculate',
