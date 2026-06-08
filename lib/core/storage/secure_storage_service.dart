@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorageService {
@@ -6,15 +7,25 @@ class SecureStorageService {
           aOptions: AndroidOptions(encryptedSharedPreferences: true),
         );
 
-  static const _tokenKey = 'auth_token';
+  static const tokenKey = 'auth_token';
 
   final FlutterSecureStorage _storage;
 
-  Future<void> saveToken(String token) => _storage.write(key: _tokenKey, value: token);
+  Future<void> saveToken(String token) async {
+    await _storage.write(key: tokenKey, value: token);
+    if (kDebugMode) {
+      debugPrint('[SecureStorage] token saved (exists: ${token.isNotEmpty})');
+    }
+  }
 
-  Future<String?> getToken() => _storage.read(key: _tokenKey);
+  Future<String?> getToken() => _storage.read(key: tokenKey);
 
-  Future<void> deleteToken() => _storage.delete(key: _tokenKey);
+  Future<void> deleteToken() async {
+    await _storage.delete(key: tokenKey);
+    if (kDebugMode) {
+      debugPrint('[SecureStorage] token deleted');
+    }
+  }
 
   Future<bool> hasToken() async {
     final token = await getToken();

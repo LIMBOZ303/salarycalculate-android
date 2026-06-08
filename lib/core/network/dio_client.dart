@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import '../storage/secure_storage_service.dart';
@@ -20,7 +21,7 @@ class DioClient {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.getToken();
+          final token = _authToken ?? await _storage.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -38,10 +39,25 @@ class DioClient {
 
   final SecureStorageService _storage;
   late final Dio _dio;
+  String? _authToken;
 
   static UnauthorizedCallback? onUnauthorized;
 
   Dio get dio => _dio;
+
+  void setAuthToken(String token) {
+    _authToken = token;
+    if (kDebugMode) {
+      debugPrint('[DioClient] auth token set (exists: ${token.isNotEmpty})');
+    }
+  }
+
+  void clearAuthToken() {
+    _authToken = null;
+    if (kDebugMode) {
+      debugPrint('[DioClient] auth token cleared');
+    }
+  }
 
   Future<Map<String, dynamic>> get(
     String path, {
@@ -77,6 +93,7 @@ class DioClient {
       throw ApiException(
         message: data['message']?.toString() ?? 'Có lỗi xảy ra',
         error: data['error']?.toString(),
+        responseData: data,
       );
     }
 
@@ -91,18 +108,17 @@ class DioClient {
       final message = data['message']?.toString() ??
           data['error']?.toString() ??
           'Có lỗi xảy ra';
-      if (status == 401) {
-        onUnauthorized?.call();
-      }
       return ApiException(
         message: message,
         statusCode: status,
         error: data['error']?.toString(),
+        responseData: data,
       );
     }
 
     if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout) {
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
       return ApiException(message: 'Kết nối quá thời gian, vui lòng thử lại');
     }
 

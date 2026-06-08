@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/responsive.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/app_button.dart';
 import '../auth/login_screen.dart';
 import '../auth/pending_approval_screen.dart';
 import '../main/main_shell.dart';
@@ -16,6 +17,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  bool _isRetrying = false;
+
   @override
   void initState() {
     super.initState();
@@ -26,7 +29,19 @@ class _SplashScreenState extends State<SplashScreen> {
     final auth = context.read<AuthProvider>();
     await auth.checkSession();
     if (!mounted) return;
+    _navigateFromAuth(auth);
+  }
 
+  Future<void> _retry() async {
+    setState(() => _isRetrying = true);
+    final auth = context.read<AuthProvider>();
+    await auth.checkSession();
+    if (!mounted) return;
+    setState(() => _isRetrying = false);
+    _navigateFromAuth(auth);
+  }
+
+  void _navigateFromAuth(AuthProvider auth) {
     switch (auth.status) {
       case AuthStatus.authenticated:
         Navigator.of(context).pushReplacement(
@@ -37,6 +52,8 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PendingApprovalScreen()),
         );
+        break;
+      case AuthStatus.sessionError:
         break;
       case AuthStatus.error:
         Navigator.of(context).pushReplacement(
@@ -54,6 +71,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final showSessionError = auth.status == AuthStatus.sessionError;
     final iconSize = ResponsiveHelper.responsiveIconSize(context, 72);
     final titleSize = ResponsiveHelper.responsiveFont(context, 26);
 
@@ -78,7 +97,9 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                     child: Icon(
-                      Icons.access_time_filled_rounded,
+                      showSessionError
+                          ? Icons.wifi_off_rounded
+                          : Icons.access_time_filled_rounded,
                       size: iconSize,
                       color: Colors.white,
                     ),
@@ -97,7 +118,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                   SizedBox(height: ResponsiveHelper.verticalSpacing(context, 8)),
                   Text(
-                    'Chấm công nhân viên',
+                    showSessionError
+                        ? 'Không thể khôi phục phiên đăng nhập'
+                        : 'Chấm công nhân viên',
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -107,22 +130,39 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                   ),
                   SizedBox(height: ResponsiveHelper.verticalSpacing(context, 36)),
-                  const SizedBox(
-                    width: 28,
-                    height: 28,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: Colors.white,
+                  if (showSessionError) ...[
+                    Text(
+                      auth.errorMessage ?? 'Kiểm tra kết nối mạng và thử lại.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.responsiveFont(context, 14),
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
                     ),
-                  ),
-                  SizedBox(height: ResponsiveHelper.verticalSpacing(context, 14)),
-                  Text(
-                    'Đang tải dữ liệu...',
-                    style: TextStyle(
-                      fontSize: ResponsiveHelper.responsiveFont(context, 13),
-                      color: Colors.white.withValues(alpha: 0.75),
+                    SizedBox(height: ResponsiveHelper.verticalSpacing(context, 24)),
+                    AppButton(
+                      label: 'Thử lại',
+                      isLoading: _isRetrying || auth.status == AuthStatus.loading,
+                      onPressed: _retry,
                     ),
-                  ),
+                  ] else ...[
+                    const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveHelper.verticalSpacing(context, 14)),
+                    Text(
+                      'Đang tải dữ liệu...',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.responsiveFont(context, 13),
+                        color: Colors.white.withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

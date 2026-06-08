@@ -29,8 +29,14 @@ class PendingApprovalScreen extends StatelessWidget {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } else if (auth.status == AuthStatus.sessionError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage ?? 'Không thể kiểm tra trạng thái. Vui lòng thử lại.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } else {
-      await auth.logout();
       if (!context.mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(

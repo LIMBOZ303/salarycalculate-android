@@ -38,7 +38,11 @@ class EmployeeAttendanceApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => AuthProvider(authService: authService, storage: storage),
+          create: (_) => AuthProvider(
+            authService: authService,
+            storage: storage,
+            dioClient: dioClient,
+          ),
         ),
         ChangeNotifierProvider(
           create: (_) => EmployeeProvider(employeeService),
