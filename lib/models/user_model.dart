@@ -46,18 +46,32 @@ class UserModel {
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final userJson = json['user'] as Map<String, dynamic>? ?? json;
+  final data = json['data'];
 
-    return UserModel(
-      id: userJson['_id']?.toString() ?? userJson['id']?.toString() ?? '',
-      fullName: userJson['fullName']?.toString() ?? '',
-      email: userJson['email']?.toString() ?? '',
-      phone: userJson['phone']?.toString() ?? '',
-      role: userJson['role']?.toString() ?? '',
-      status: userJson['status']?.toString() ?? '',
-      avatarUrl: userJson['avatarUrl']?.toString() ?? userJson['avatar']?.toString(),
-    );
-  }
+  final root = data is Map<String, dynamic>
+      ? data
+      : json;
+
+  final user = root['user'];
+
+  final userJson = user is Map<String, dynamic>
+      ? user
+      : root;
+
+  return UserModel(
+    id: userJson['_id']?.toString() ?? userJson['id']?.toString() ?? '',
+    fullName: userJson['fullName']?.toString() ??
+        userJson['name']?.toString() ??
+        '',
+    email: userJson['email']?.toString() ?? '',
+    phone: userJson['phone']?.toString() ?? '',
+    role: userJson['role']?.toString() ?? '',
+    status: userJson['status']?.toString() ?? '',
+    avatarUrl: userJson['avatarUrl']?.toString() ??
+        userJson['avatar']?.toString() ??
+        '',
+  );
+}
 }
 
 class AuthResponse {
